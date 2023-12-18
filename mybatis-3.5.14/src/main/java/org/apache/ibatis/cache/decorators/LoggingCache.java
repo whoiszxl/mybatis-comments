@@ -51,14 +51,19 @@ public class LoggingCache implements Cache {
 
   @Override
   public Object getObject(Object key) {
+    // 记录请求数
     requests++;
+    // 从 ScheduledCache 获取缓存
     final Object value = delegate.getObject(key);
+    // 如果获取到了缓存，那么将缓存命中数+1
     if (value != null) {
       hits++;
     }
+    // 如果开启了 debug 模式，那么打印出缓存的命中率来
     if (log.isDebugEnabled()) {
       log.debug("Cache Hit Ratio [" + getId() + "]: " + getHitRatio());
     }
+    // 返回缓存数据
     return value;
   }
 

@@ -44,6 +44,7 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
   @Override
   public SqlSession openSession() {
+    // 从指定数据源开启SQL会话，指定默认的执行器类型为 SIMPLE，事务隔离级别为 null，事务自动提交为不自动。
     return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, false);
   }
 
@@ -91,15 +92,22 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
       boolean autoCommit) {
     Transaction tx = null;
     try {
+      // 从 Configuration 实例中获取到数据库的环境信息，如IP,端口,账号密码等信息
       final Environment environment = configuration.getEnvironment();
+      // 再从环境信息中获取到事务工厂
       final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
+      // 通过事务工厂将事务创建出来
       tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
+      // 根据我们指定的执行器类型将执行器创建出来
       final Executor executor = configuration.newExecutor(tx, execType);
+      // 创建默认的SQL会话
       return new DefaultSqlSession(configuration, executor, autoCommit);
     } catch (Exception e) {
+      // 如果发生异常需要关闭事务
       closeTransaction(tx); // may have fetched a connection so lets call close()
       throw ExceptionFactory.wrapException("Error opening session.  Cause: " + e, e);
     } finally {
+      // 重置错误上下文对象
       ErrorContext.instance().reset();
     }
   }

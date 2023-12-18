@@ -96,9 +96,13 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   public void parse() {
+    // 判断此 Mapper 资源是否已经被加载过了，防止重复加载
     if (!configuration.isResourceLoaded(resource)) {
+      // 解析 mapper.xml 映射文件里 <mapper> 标签下的所有内容，并将其保存到 Configuration 对象中
       configurationElement(parser.evalNode("/mapper"));
+      // 解析完成后将 mapper.xml 文件的全路径添加到已加载资源的集合中
       configuration.addLoadedResource(resource);
+      // 通过 namespace 绑定 Mapper 的接口
       bindMapperForNamespace();
     }
     parsePendingResultMaps();
@@ -111,17 +115,43 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   private void configurationElement(XNode context) {
+    /**
+     * 此处 context 内容如下：
+     *
+     * <mapper namespace="com.whoiszxl.MemberMapper">
+     *     <select id="findAll" resultType="com.whoiszxl.entity.Member">
+     *     select * from member
+     *   </select>
+     *     <insert parameterType="com.whoiszxl.entity.Member" id="insertOne">
+     *     insert into member values(#{id}, #{username}, #{password});
+     *   </insert>
+     *     <delete parameterType="int" id="deleteOne">
+     *     delete from member where id = #{id}
+     *   </delete>
+     *     <update parameterType="com.whoiszxl.entity.Member" id="updateOne">
+     *     update member set username = #{username}, password = #{password} where id = #{id}
+     *   </update>
+     * </mapper>
+     */
     try {
+      // 获取到 <mapper> 标签里的 namespace 属性，并做非空校验
       String namespace = context.getStringAttribute("namespace");
       if (namespace == null || namespace.isEmpty()) {
         throw new BuilderException("Mapper's namespace cannot be empty");
       }
+      // 将 namespace 属性设置到 currentNamespace 中
       builderAssistant.setCurrentNamespace(namespace);
+      // 解析 cache-ref 和 cache 属性
       cacheRefElement(context.evalNode("cache-ref"));
       cacheElement(context.evalNode("cache"));
+
+      // 解析 <mapper> 下的 <parameterMap> 标签
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
+      // 解析 <mapper> 下的 <resultMap> 标签
       resultMapElements(context.evalNodes("/mapper/resultMap"));
+      // 解析 <mapper> 下的 <sql> 标签
       sqlElement(context.evalNodes("/mapper/sql"));
+      // 构建增删改查的 statement
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing Mapper XML. The XML location is '" + resource + "'. Cause: " + e, e);
@@ -130,8 +160,10 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void buildStatementFromContext(List<XNode> list) {
     if (configuration.getDatabaseId() != null) {
+      // 如果指定了 databaseId，则需要构建指定数据库的SQL语句
       buildStatementFromContext(list, configuration.getDatabaseId());
     }
+    // 默认构建
     buildStatementFromContext(list, null);
   }
 
@@ -205,17 +237,33 @@ public class XMLMapperBuilder extends BaseBuilder {
     }
   }
 
+  /**
+   * 缓存标签解析，具体参考官方文档：{@link <a href="https://mybatis.org/mybatis-3/zh_CN/sqlmap-xml.html#cache">mybatis缓存文档</a>}
+   * @param context
+   */
   private void cacheElement(XNode context) {
     if (context != null) {
+      // 获取缓存的类型，默认是 PERPETUAL，表示这个缓存是永久的。
       String type = context.getStringAttribute("type", "PERPETUAL");
+      // 通过缓存类型获取到具体的缓存实现的 Class 类对象
       Class<? extends Cache> typeClass = typeAliasRegistry.resolveAlias(type);
+      // 获取缓存的清除策略，默认采用 LRU 策略，意思是需要移除最长时间不被使用的对象。
+      // 其中策略还有 FIFO 先进先出（按照对象进入缓存的顺序来移除）、SOFT 软引用（基于软引用规则来移除）、WEAK 弱引用（基于弱引用规则移除对象）
       String eviction = context.getStringAttribute("eviction", "LRU");
+      // 通过缓存清除策略获取到具体的缓存清除策略的 Class 类对象
       Class<? extends Cache> evictionClass = typeAliasRegistry.resolveAlias(eviction);
+      // 获取缓存的自动刷新间隔，单位毫秒
       Long flushInterval = context.getLongAttribute("flushInterval");
+      // 缓存中个数的限制大小，默认为 1024
       Integer size = context.getIntAttribute("size");
+      // 缓存是否只读，只读状态下，缓存会给调用者返回相同的实例对象，因为其不能被修改，这样的性能比较可观。
+      // 如果是可读写的话，底层是基于序列化返回缓存对象的拷贝，性能上慢一点。
       boolean readWrite = !context.getBooleanAttribute("readOnly", false);
+      // 缓存是否阻塞，默认为不阻塞。意思是在获取缓存的时候，如果找不到缓存是否需要阻塞等待获取。
       boolean blocking = context.getBooleanAttribute("blocking", false);
+      // 获取 <cache></cache>标签下的子节点 <property/>
       Properties props = context.getChildrenAsProperties();
+      // 进行构建，构建出来后添加到 Configuration 对象里面
       builderAssistant.useNewCache(typeClass, evictionClass, flushInterval, size, readWrite, blocking, props);
     }
   }

@@ -29,6 +29,9 @@ public class MixedSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
+    // 遍历处理 MixedSqlNode 节点中的 contents
+    // 假如说这里处理的是 findByCondition，此处则会将 SQL语句、<where>标签块、回车换行三块内容迭代处理
+    // apply 处理操作则是节点自身实现的处理方法
     contents.forEach(node -> node.apply(context));
     return true;
   }

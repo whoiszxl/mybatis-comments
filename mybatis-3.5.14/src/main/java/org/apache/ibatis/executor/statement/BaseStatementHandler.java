@@ -84,17 +84,23 @@ public abstract class BaseStatementHandler implements StatementHandler {
 
   @Override
   public Statement prepare(Connection connection, Integer transactionTimeout) throws SQLException {
+    // 错误上下文中记录当前执行的 SQL 语句，方便在发生异常时提供便于阅读的异常信息
     ErrorContext.instance().sql(boundSql.getSql());
     Statement statement = null;
     try {
+      // 实例化 Statement 语句对象
       statement = instantiateStatement(connection);
+      // 设置 Statement 语句对象的查询超时时间
       setStatementTimeout(statement, transactionTimeout);
+      // 设置 Statement 语句对象的抓取记录大小
       setFetchSize(statement);
       return statement;
     } catch (SQLException e) {
+      // 发生 SQLException 异常则关闭 Statement 并抛出异常
       closeStatement(statement);
       throw e;
     } catch (Exception e) {
+      // 如果抛出了其他异常，同样会关闭 Statement 并将异常封装为 ExecutorException 抛出
       closeStatement(statement);
       throw new ExecutorException("Error preparing statement.  Cause: " + e, e);
     }

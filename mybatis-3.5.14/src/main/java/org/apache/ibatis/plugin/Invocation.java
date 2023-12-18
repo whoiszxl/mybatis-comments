@@ -20,11 +20,23 @@ import java.lang.reflect.Method;
 
 /**
  * @author Clinton Begin
+ * 用于实现拦截器插件的一个 class
  */
 public class Invocation {
 
+  /**
+   * 要调用方法的目标对象
+   */
   private final Object target;
+
+  /**
+   * 要调用的方法
+   */
   private final Method method;
+
+  /**
+   * 方法的参数
+   */
   private final Object[] args;
 
   public Invocation(Object target, Method method, Object[] args) {

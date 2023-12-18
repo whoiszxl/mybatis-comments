@@ -98,34 +98,83 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
  * @author Clinton Begin
+ * 配置信息类，存储 MyBatis 通用的配置信息
  */
 public class Configuration {
 
+  /** environment标签中的环境信息，其中具有数据库连接等基本环境信息 */
   protected Environment environment;
 
+  /** 允许在嵌套语句中使用分页（RowBounds）。如果允许使用则设置为false。默认为false */
   protected boolean safeRowBoundsEnabled;
+
+  /** 允许在嵌套语句中使用分页（ResultHandler）。如果允许使用则设置为false。 */
   protected boolean safeResultHandlerEnabled = true;
+
+  /** 是否开启自动驼峰命名规则（camel case）映射，即从经典数据库列名 A_COLUMN 到经典 Java 属性名 aColumn 的类似映射。默认false */
   protected boolean mapUnderscoreToCamelCase;
+
+  /** 当开启时，任何方法的调用都会加载该对象的所有属性。否则，每个属性会按需加载。默认值false (true in ≤3.4.1) */
   protected boolean aggressiveLazyLoading;
+
+  /** 是否允许单一语句返回多结果集（需要兼容驱动） */
   protected boolean multipleResultSetsEnabled = true;
+
+  /**
+   * 允许 JDBC 支持自动生成主键，需要驱动兼容。
+   * 这就是 insert 时获取 mysql 自增主键/oracle sequence的开关。
+   * 注：一般来说,这是希望的结果,应该默认值为true比较合适。
+   * */
   protected boolean useGeneratedKeys;
+
+  /** 使用列标签代替列名,一般来说,这是希望的结果 */
   protected boolean useColumnLabel = true;
+
+  /** 是否启用缓存 */
   protected boolean cacheEnabled = true;
+
+  /** 指定当结果集中值为 null 的时候是否调用映射对象的 setter（map 对象时为 put）方法，
+   * 这对于有 Map.keySet() 依赖或 null 值初始化的时候是有用的。 */
   protected boolean callSettersOnNulls;
+
+  /** 允许使用方法签名中的名称作为语句参数名称。
+   * 为了使用该特性，你的工程必须采用Java 8编译，
+   * 并且加上-parameters选项。（从3.4.1开始） */
   protected boolean useActualParamName = true;
+
+  /** 当返回行的所有列都是空时，MyBatis默认返回null。 当开启这个设置时，MyBatis会返回一个空实例。
+   * 请注意，它也适用于嵌套的结果集 (i.e. collectioin and association)。（从3.4.2开始）
+   * 注：这里应该拆分为两个参数比较合适, 一个用于结果集，一个用于单记录。通常来说，我们会希望结果集不是null，单记录仍然是null */
   protected boolean returnInstanceForEmptyRow;
+
   protected boolean shrinkWhitespacesInSql;
   protected boolean nullableOnForEach;
   protected boolean argNameBasedConstructorAutoMapping;
 
+  /** 指定 MyBatis 增加到日志名称的前缀。 */
   protected String logPrefix;
+
+  /** 指定 MyBatis 所用日志的具体实现，未指定时将自动查找。一般建议指定为 slf4j 或 log4j */
   protected Class<? extends Log> logImpl;
+
+  /**  */
   protected Class<? extends VFS> vfsImpl;
   protected Class<?> defaultSqlProviderType;
+
+  /** MyBatis 利用本地缓存机制（Local Cache）防止循环引用（circular references）和加速重复嵌套查询。
+   * 默认值为 SESSION，这种情况下会缓存一个会话中执行的所有查询。
+   * 若设置值为 STATEMENT，本地会话仅用在语句执行上，对相同 SqlSession 的不同调用将不会共享数据。 */
   protected LocalCacheScope localCacheScope = LocalCacheScope.SESSION;
+
+  /** 当没有为参数提供特定的 JDBC 类型时，为空值指定 JDBC 类型。
+   * 某些驱动需要指定列的 JDBC 类型，多数情况直接用一般类型即可，比如 NULL、VARCHAR 或 OTHER。 */
   protected JdbcType jdbcTypeForNull = JdbcType.OTHER;
+
+  /** 指定对象的哪个方法触发一次延迟加载。 */
   protected Set<String> lazyLoadTriggerMethods = new HashSet<>(
       Arrays.asList("equals", "clone", "hashCode", "toString"));
+
+
   protected Integer defaultStatementTimeout;
   protected Integer defaultFetchSize;
   protected ResultSetType defaultResultSetType;
@@ -141,6 +190,7 @@ public class Configuration {
   protected boolean lazyLoadingEnabled;
   protected ProxyFactory proxyFactory = new JavassistProxyFactory(); // #224 Using internal Javassist instead of OGNL
 
+  /** 数据库ID，可以根据不同类型的数据库执行不同的SQL语句 */
   protected String databaseId;
   /**
    * Configuration factory class. Used to create Configuration for loading deserialized unread properties.
@@ -184,6 +234,9 @@ public class Configuration {
   }
 
   public Configuration() {
+    // 在 Configuration 对象初始化的时候注册一批别名
+
+    // 数据源相关的别名
     typeAliasRegistry.registerAlias("JDBC", JdbcTransactionFactory.class);
     typeAliasRegistry.registerAlias("MANAGED", ManagedTransactionFactory.class);
 
@@ -191,6 +244,7 @@ public class Configuration {
     typeAliasRegistry.registerAlias("POOLED", PooledDataSourceFactory.class);
     typeAliasRegistry.registerAlias("UNPOOLED", UnpooledDataSourceFactory.class);
 
+    // 缓存策略
     typeAliasRegistry.registerAlias("PERPETUAL", PerpetualCache.class);
     typeAliasRegistry.registerAlias("FIFO", FifoCache.class);
     typeAliasRegistry.registerAlias("LRU", LruCache.class);
@@ -202,6 +256,7 @@ public class Configuration {
     typeAliasRegistry.registerAlias("XML", XMLLanguageDriver.class);
     typeAliasRegistry.registerAlias("RAW", RawLanguageDriver.class);
 
+    // 日志相关
     typeAliasRegistry.registerAlias("SLF4J", Slf4jImpl.class);
     typeAliasRegistry.registerAlias("COMMONS_LOGGING", JakartaCommonsLoggingImpl.class);
     typeAliasRegistry.registerAlias("LOG4J", Log4jImpl.class);
@@ -210,6 +265,7 @@ public class Configuration {
     typeAliasRegistry.registerAlias("STDOUT_LOGGING", StdOutImpl.class);
     typeAliasRegistry.registerAlias("NO_LOGGING", NoLoggingImpl.class);
 
+    // 代理相关
     typeAliasRegistry.registerAlias("CGLIB", CglibProxyFactory.class);
     typeAliasRegistry.registerAlias("JAVASSIST", JavassistProxyFactory.class);
 
@@ -699,6 +755,7 @@ public class Configuration {
       BoundSql boundSql) {
     ParameterHandler parameterHandler = mappedStatement.getLang().createParameterHandler(mappedStatement,
         parameterObject, boundSql);
+    // 【插件增强】
     return (ParameterHandler) interceptorChain.pluginAll(parameterHandler);
   }
 
@@ -706,13 +763,16 @@ public class Configuration {
       ParameterHandler parameterHandler, ResultHandler resultHandler, BoundSql boundSql) {
     ResultSetHandler resultSetHandler = new DefaultResultSetHandler(executor, mappedStatement, parameterHandler,
         resultHandler, boundSql, rowBounds);
+    // 【插件增强】
     return (ResultSetHandler) interceptorChain.pluginAll(resultSetHandler);
   }
 
   public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement,
       Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
+    // 构建 StatementHandler 语句处理器，通过在 RoutingStatementHandler 构造方法中进行选择
     StatementHandler statementHandler = new RoutingStatementHandler(executor, mappedStatement, parameterObject,
         rowBounds, resultHandler, boundSql);
+    // 【插件增强】
     return (StatementHandler) interceptorChain.pluginAll(statementHandler);
   }
 
@@ -720,19 +780,31 @@ public class Configuration {
     return newExecutor(transaction, defaultExecutorType);
   }
 
+  /**
+   * 创建执行器
+   * @param transaction
+   * @param executorType
+   * @return
+   */
   public Executor newExecutor(Transaction transaction, ExecutorType executorType) {
+    // 如果没有指定执行器类型，那么就采用默认的 SIMPLE 执行器
     executorType = executorType == null ? defaultExecutorType : executorType;
     Executor executor;
     if (ExecutorType.BATCH == executorType) {
+      // 创建批量执行器，不仅重用 PreparedStatement 还会执行批量更新
       executor = new BatchExecutor(this, transaction);
     } else if (ExecutorType.REUSE == executorType) {
+      // 创建重用执行器，会重用 PreparedStatement
       executor = new ReuseExecutor(this, transaction);
     } else {
+      // 创建简单执行器，执行一次用一个 PreparedStatement
       executor = new SimpleExecutor(this, transaction);
     }
     if (cacheEnabled) {
+      // 如果开启了缓存，那么创建缓存执行器，直接对上述创建的执行器进行包装
       executor = new CachingExecutor(executor);
     }
+    // 【插件增强】
     return (Executor) interceptorChain.pluginAll(executor);
   }
 
@@ -880,6 +952,7 @@ public class Configuration {
   }
 
   public void addInterceptor(Interceptor interceptor) {
+    // 将拦截器添加到 interceptorChain 中
     interceptorChain.addInterceptor(interceptor);
   }
 

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+  <settings>
+    <setting name="logImpl" value="LOG4J"/>
+    <setting name="cacheEnabled" value="true"/>
+  </settings>
+
+<!--  <plugins>-->
+<!--    <plugin interceptor="com.whoiszxl.plugins.LoggerPlugin"></plugin>-->
+<!--    <plugin interceptor="com.whoiszxl.plugins.PasswordDesensitizePlugin"></plugin>-->
+<!--  </plugins>-->
+
+  <environments default="dev">
+    <environment id="dev">
+      <transactionManager type="JDBC"/>
+      <dataSource type="POOLED">
+        <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://106.13.7.251:3300/mybatis?characterEncoding=utf-8"/>
+        <property name="username" value="root"/>
+        <property name="password" value="123456"/>
+      </dataSource>
+    </environment>
+
+    <environment id="test">
+      <transactionManager type="JDBC"/>
+      <dataSource type="POOLED">
+        <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://106.13.7.251:3300/mybatis-test?characterEncoding=utf-8"/>
+        <property name="username" value="root"/>
+        <property name="password" value="123456"/>
+      </dataSource>
+    </environment>
+
+    <environment id="prod">
+      <transactionManager type="JDBC"/>
+      <dataSource type="POOLED">
+        <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://106.13.7.251:3300/mybatis-prod?characterEncoding=utf-8"/>
+        <property name="username" value="root"/>
+        <property name="password" value="123456"/>
+      </dataSource>
+    </environment>
+  </environments>
+  <mappers>
+    <mapper resource="com/whoiszxl/mapper/memberMapper.xml"/>
+  </mappers>
+</configuration>

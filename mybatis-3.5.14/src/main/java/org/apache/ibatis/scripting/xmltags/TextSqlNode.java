@@ -39,8 +39,10 @@ public class TextSqlNode implements SqlNode {
   }
 
   public boolean isDynamic() {
+    // 创建一个动态SQL的检查器
     DynamicCheckerTokenParser checker = new DynamicCheckerTokenParser();
     GenericTokenParser parser = createParser(checker);
+    // 解析判断，SQL中是否存在 ${}，若存在则给 isDynamic 变量赋值为 true
     parser.parse(text);
     return checker.isDynamic();
   }

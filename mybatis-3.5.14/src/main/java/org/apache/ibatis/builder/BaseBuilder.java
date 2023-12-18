@@ -37,7 +37,9 @@ public abstract class BaseBuilder {
   protected final TypeHandlerRegistry typeHandlerRegistry;
 
   public BaseBuilder(Configuration configuration) {
+    // 将反射创建出来的配置实例赋值到构建器中
     this.configuration = configuration;
+    // 从配置实例中拿到别名注册器和类型处理注册器
     this.typeAliasRegistry = this.configuration.getTypeAliasRegistry();
     this.typeHandlerRegistry = this.configuration.getTypeHandlerRegistry();
   }
@@ -98,6 +100,8 @@ public abstract class BaseBuilder {
 
   protected <T> Class<? extends T> resolveClass(String alias) {
     try {
+      // 如果别名不存在，直接返回 null
+      // 如果存在，则通过 resolveAlias 解析获取对应的 Class 对象
       return alias == null ? null : resolveAlias(alias);
     } catch (Exception e) {
       throw new BuilderException("Error resolving class. Cause: " + e, e);
@@ -129,6 +133,7 @@ public abstract class BaseBuilder {
   }
 
   protected <T> Class<? extends T> resolveAlias(String alias) {
+    // 从别名注册器中获取
     return typeAliasRegistry.resolveAlias(alias);
   }
 }

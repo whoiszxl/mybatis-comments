@@ -317,15 +317,19 @@ public final class MappedStatement {
   }
 
   public BoundSql getBoundSql(Object parameterObject) {
+    // 将 sqlSource 里的部分信息包装成一个 BoundSql 对象
     BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
+    // 如果参数映射不存在，则需要将 BoundSql 重新构建一下。使用 parameterMap.getParameterMappings() 覆盖原有参数映射
     if (parameterMappings == null || parameterMappings.isEmpty()) {
       boundSql = new BoundSql(configuration, boundSql.getSql(), parameterMap.getParameterMappings(), parameterObject);
     }
 
     // check for nested result maps in parameter mappings (issue #30)
     for (ParameterMapping pm : boundSql.getParameterMappings()) {
+      // 检查是否存在 resultMap
       String rmId = pm.getResultMapId();
+      // 如果存在的话，需要检查一下 ResultMap 中是否存在嵌套
       if (rmId != null) {
         ResultMap rm = configuration.getResultMap(rmId);
         if (rm != null) {

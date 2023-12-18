@@ -27,6 +27,7 @@ public class InterceptorChain {
   private final List<Interceptor> interceptors = new ArrayList<>();
 
   public Object pluginAll(Object target) {
+    // 遍历 XML 里面配置的所有的 <plugin> 插件，并基础插件生成对应的代理对象
     for (Interceptor interceptor : interceptors) {
       target = interceptor.plugin(target);
     }
@@ -34,6 +35,7 @@ public class InterceptorChain {
   }
 
   public void addInterceptor(Interceptor interceptor) {
+    // 将拦截器添加到 interceptors 列表中
     interceptors.add(interceptor);
   }
 

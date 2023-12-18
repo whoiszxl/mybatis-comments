@@ -141,31 +141,48 @@ public abstract class BaseExecutor implements Executor {
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler,
       CacheKey key, BoundSql boundSql) throws SQLException {
+    // 记录错误上下文的基本信息
     ErrorContext.instance().resource(ms.getResource()).activity("executing a query").object(ms.getId());
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
+    // queryStack == 0: 查询堆栈深度为0，表示嵌套查询的深度
+    // ms.isFlushCacheRequired(): 表示是否开启了缓存刷新
+    // 如果条件都符合，清理一下缓存
     if (queryStack == 0 && ms.isFlushCacheRequired()) {
       clearLocalCache();
     }
     List<E> list;
     try {
+      // 嵌套查询堆栈深度+1
       queryStack++;
+      // 从本地缓存也就是一级缓存中获取数据
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
+
       if (list != null) {
+        // 如果存在则处理一下`存储过程`的结果输出参数
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
       } else {
+        // 如果不存在则从数据库中获取
         list = queryFromDatabase(ms, parameter, rowBounds, resultHandler, key, boundSql);
       }
     } finally {
+      // 查询堆栈深度-1
       queryStack--;
     }
+
+    // 如果查询堆栈深度为 0，表示当前是在最外层的查询
     if (queryStack == 0) {
+      // 遍历延迟加载任务，依次执行 load
       for (DeferredLoad deferredLoad : deferredLoads) {
         deferredLoad.load();
       }
       // issue #601
+      // 清空延迟加载任务
       deferredLoads.clear();
+
+      // 如果配置的本地缓存范围为  LocalCacheScope.STATEMENT，则清空本地缓存，避免缓存影响下一次的语句执行
+      // 默认是 SESSION 会话级别，所以此处不会清空 SESSION
       if (configuration.getLocalCacheScope() == LocalCacheScope.STATEMENT) {
         // issue #482
         clearLocalCache();
@@ -199,10 +216,16 @@ public abstract class BaseExecutor implements Executor {
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
+    // 创建 CacheKey 对象，并对其进行赋值
+    // 其格式为：cacheKey=ID + offset + limit + sql + parameterValues + environmentId
     CacheKey cacheKey = new CacheKey();
+    // SQL语句的ID
     cacheKey.update(ms.getId());
+    // 分页 offset
     cacheKey.update(rowBounds.getOffset());
+    // 分页 limit
     cacheKey.update(rowBounds.getLimit());
+    // JDBC 规范化后的预编译 SQL 语句
     cacheKey.update(boundSql.getSql());
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
     TypeHandlerRegistry typeHandlerRegistry = ms.getConfiguration().getTypeHandlerRegistry();
@@ -224,11 +247,13 @@ public abstract class BaseExecutor implements Executor {
           }
           value = metaObject.getValue(propertyName);
         }
+        // 映射参数的值
         cacheKey.update(value);
       }
     }
     if (configuration.getEnvironment() != null) {
       // issue #176
+      // 环境信息的ID
       cacheKey.update(configuration.getEnvironment().getId());
     }
     return cacheKey;
@@ -331,13 +356,19 @@ public abstract class BaseExecutor implements Executor {
   private <E> List<E> queryFromDatabase(MappedStatement ms, Object parameter, RowBounds rowBounds,
       ResultHandler resultHandler, CacheKey key, BoundSql boundSql) throws SQLException {
     List<E> list;
+    // 在执行数据库查询之前，将一个占位符对象（EXECUTION_PLACEHOLDER）放入本地缓存中，以占位表示查询正在执行
     localCache.putObject(key, EXECUTION_PLACEHOLDER);
     try {
+      // 执行实际的查询操作，获取查询结果列表
       list = doQuery(ms, parameter, rowBounds, resultHandler, boundSql);
     } finally {
+      // 从本地缓存中移除之前放入的占位符对象，确保缓存中不存在此占位符
       localCache.removeObject(key);
     }
+    // 将实际的查询结果列表放回本地缓存，覆盖之前的占位符对象
     localCache.putObject(key, list);
+
+    // 如果语句的类型为存储过程，则将查询参数放入本地输出参数缓存
     if (ms.getStatementType() == StatementType.CALLABLE) {
       localOutputParameterCache.putObject(key, parameter);
     }
@@ -345,7 +376,9 @@ public abstract class BaseExecutor implements Executor {
   }
 
   protected Connection getConnection(Log statementLog) throws SQLException {
+    // 从事务对象中拿到 JDBC Connection 连接
     Connection connection = transaction.getConnection();
+    // 如果 debug 开启了，那么需要创建一个带日志功能的代理 Connection
     if (statementLog.isDebugEnabled()) {
       return ConnectionLogger.newInstance(connection, statementLog, queryStack);
     }

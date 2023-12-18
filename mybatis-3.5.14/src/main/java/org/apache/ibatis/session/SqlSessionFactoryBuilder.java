@@ -76,7 +76,10 @@ public class SqlSessionFactoryBuilder {
 
   public SqlSessionFactory build(InputStream inputStream, String environment, Properties properties) {
     try {
+      // 创建一个 XML 配置的构建器，底层通过XPath进行解析
       XMLConfigBuilder parser = new XMLConfigBuilder(inputStream, environment, properties);
+      // parser.parse(): 通过配置构建器进行构建，构建出 Configuration 对象，这个对象里面会有XML里面所有的配置信息
+      // 接着通过 build 操作将其构建成一个 SqlSessionFactory 对象，我们可以通过这个对象获取到数据库的会话
       return build(parser.parse());
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error building SqlSession.", e);

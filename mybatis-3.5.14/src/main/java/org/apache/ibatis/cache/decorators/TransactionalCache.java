@@ -95,6 +95,7 @@ public class TransactionalCache implements Cache {
     if (clearOnCommit) {
       delegate.clear();
     }
+    // 此处刷新所有等待提交的节点
     flushPendingEntries();
     reset();
   }
@@ -111,9 +112,12 @@ public class TransactionalCache implements Cache {
   }
 
   private void flushPendingEntries() {
+    // 遍历 entriesToAddOnCommit 中所有的节点，将节点中的缓存数据保存到 PerpetualCache 真正的缓存中，这样其他的 Session 就可以获取到了
     for (Map.Entry<Object, Object> entry : entriesToAddOnCommit.entrySet()) {
       delegate.putObject(entry.getKey(), entry.getValue());
     }
+
+    // 遍历 entriesMissedInCache 中所有的节点，如果这些节点在 entriesToAddOnCommit 里面不存在的话，就将其 value 置为 null 添加到缓存中.
     for (Object entry : entriesMissedInCache) {
       if (!entriesToAddOnCommit.containsKey(entry)) {
         delegate.putObject(entry, null);

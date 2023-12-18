@@ -123,10 +123,13 @@ public class MapperBuilderAssistant extends BaseBuilder {
 
   public Cache useNewCache(Class<? extends Cache> typeClass, Class<? extends Cache> evictionClass, Long flushInterval,
       Integer size, boolean readWrite, boolean blocking, Properties props) {
+    // 通过构建者模式将 Cache 对象创建出来
     Cache cache = new CacheBuilder(currentNamespace).implementation(valueOrDefault(typeClass, PerpetualCache.class))
         .addDecorator(valueOrDefault(evictionClass, LruCache.class)).clearInterval(flushInterval).size(size)
         .readWrite(readWrite).blocking(blocking).properties(props).build();
+    // 将 Cache 对象添加到 Configuration 里面
     configuration.addCache(cache);
+    // 将 Cache 对象添加到当前 assistant 对象的 currentCache 中，在后续构建增删改查的 MappedStatement 时，需要将此 Cache 放进去。
     currentCache = cache;
     return cache;
   }
@@ -205,8 +208,15 @@ public class MapperBuilderAssistant extends BaseBuilder {
       throw new IncompleteElementException("Cache-ref not yet resolved");
     }
 
+    // 将命名空间和id进行拼接，如下操作，则会得到结果：com.whoiszxl.MemberMapper.findById
+    //<mapper namespace="com.whoiszxl.MemberMapper">
+    // <select id="findById" resultType="com.whoiszxl.entity.Member">
+    //  select * from member where id = #{id}
+    // </select>
+    //</mapper>
     id = applyCurrentNamespace(id, false);
 
+    // 通过构建者模式将 MappedStatement 的构建器给创建出来，本质上就是一些赋值操作
     MappedStatement.Builder statementBuilder = new MappedStatement.Builder(configuration, id, sqlSource, sqlCommandType)
         .resource(resource).fetchSize(fetchSize).timeout(timeout).statementType(statementType)
         .keyGenerator(keyGenerator).keyProperty(keyProperty).keyColumn(keyColumn).databaseId(databaseId).lang(lang)
@@ -219,7 +229,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
       statementBuilder.parameterMap(statementParameterMap);
     }
 
+    // 将 MappedStatement 对象实例构造出来
     MappedStatement statement = statementBuilder.build();
+    // 然后将此 MappedStatement 对象实例添加到 Configuration 里的 mappedStatements Map中
     configuration.addMappedStatement(statement);
     return statement;
   }

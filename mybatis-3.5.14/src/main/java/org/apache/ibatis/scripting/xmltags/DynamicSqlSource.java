@@ -35,12 +35,22 @@ public class DynamicSqlSource implements SqlSource {
 
   @Override
   public BoundSql getBoundSql(Object parameterObject) {
+    // 创建一个包装了 Configuration 和 id=1 参数的动态上下文对象
     DynamicContext context = new DynamicContext(configuration, parameterObject);
+    // 根据动态标签中的 test 属性条件构建 SQL，如此处走 findByCondition 的逻辑，
+    // 则会构建出此SQL：select * from member WHERE id = #{id}
     rootSqlNode.apply(context);
+
+    // 接着创建一个 SqlSource 构建者
     SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
+    // 获取到传入参数的 class 对象，此处为 java.util.HashMap
     Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
+    // 接着将 SqlSource 构建出来，此操作主要是将 SQL 语句中的  #{id} 替换成 ? 占位符，使其可被 JDBC 执行
+    // 如：select * from member WHERE id = #{id}，需转换为：select * from member WHERE id = ?
     SqlSource sqlSource = sqlSourceParser.parse(context.getSql(), parameterType, context.getBindings());
+    // 构建出 BoundSql 对象
     BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+    // 将 bindings 参数赋值到 BoundSql 中
     context.getBindings().forEach(boundSql::setAdditionalParameter);
     return boundSql;
   }

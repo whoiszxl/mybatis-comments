@@ -135,9 +135,12 @@ public class ClassLoaderWrapper {
       if (null != cl) {
 
         // try to find the resource as passed
+        // 通过类加载器拿到对应的XML文件的输入流
         InputStream returnValue = cl.getResourceAsStream(resource);
 
         // now, some class loaders want this leading "/", so we'll add it and try again if we didn't find the resource
+        // 如果上述逻辑没有加载到对应资源，那么此处会再次加载
+        // 原因参考注释：有些类加载器想在资源前面有个"/"，所以如果没有找到资源的话，可以加斜杠再试一下
         if (null == returnValue) {
           returnValue = cl.getResourceAsStream("/" + resource);
         }

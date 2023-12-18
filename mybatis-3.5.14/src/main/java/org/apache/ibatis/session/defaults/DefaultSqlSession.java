@@ -72,14 +72,19 @@ public class DefaultSqlSession implements SqlSession {
   @Override
   public <T> T selectOne(String statement, Object parameter) {
     // Popular vote was to return null on 0 results and throw exception on too many.
+    // 先通过列表查询查到所有符合条件的记录
     List<T> list = this.selectList(statement, parameter);
+
+    // 如果记录只有一条，那么直接返回
     if (list.size() == 1) {
       return list.get(0);
     }
     if (list.size() > 1) {
+      // 如果记录大于一条，直接抛出 TooManyResultsException
       throw new TooManyResultsException(
           "Expected one result (or null) to be returned by selectOne(), but found: " + list.size());
     } else {
+      // 如果没有查询到记录，直接返回 NULL
       return null;
     }
   }
@@ -134,27 +139,35 @@ public class DefaultSqlSession implements SqlSession {
 
   @Override
   public <E> List<E> selectList(String statement) {
+    // 调用重载方法，没有传入参数，所以 parameter 为 null
     return this.selectList(statement, null);
   }
 
   @Override
   public <E> List<E> selectList(String statement, Object parameter) {
+    // 继续调用重载方法，此处传入分页逻辑为 RowBounds.DEFAULT，默认是不分页
     return this.selectList(statement, parameter, RowBounds.DEFAULT);
   }
 
   @Override
   public <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds) {
+    // 继续调用重载方法，此处传入的结果处理器为 Executor.NO_RESULT_HANDLER，也就是没有结果处理器
     return selectList(statement, parameter, rowBounds, Executor.NO_RESULT_HANDLER);
   }
 
   private <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds, ResultHandler handler) {
     try {
+      // 通过命名空间+查询ID（例如：com.whoiszxl.MemberMapper.findAll）的方式从 Configuration 对象中拿到 MappedStatement 实例
       MappedStatement ms = configuration.getMappedStatement(statement);
+      // 设置是否需要做回滚
       dirty |= ms.isDirtySelect();
+      // 通过执行器来执行查询操作，其中需要通过 wrapCollection 来将集合或数组的 parameter 包装成 ParamMap 对象，方便 Mybatis 进行处理
       return executor.query(ms, wrapCollection(parameter), rowBounds, handler);
     } catch (Exception e) {
+      // 如果发生了异常，需要通过 ErrorContext 来输出便于解读的日志
       throw ExceptionFactory.wrapException("Error querying database.  Cause: " + e, e);
     } finally {
+      // 重置 ErrorContext
       ErrorContext.instance().reset();
     }
   }
@@ -220,6 +233,7 @@ public class DefaultSqlSession implements SqlSession {
   @Override
   public void commit(boolean force) {
     try {
+      // 调用缓存执行器的 commit 方法
       executor.commit(isCommitOrRollbackRequired(force));
       dirty = false;
     } catch (Exception e) {

@@ -34,12 +34,27 @@ import org.apache.ibatis.io.Resources;
 
 /**
  * @author Clinton Begin
+ * 别名注册器
  */
 public class TypeAliasRegistry {
 
+  /**
+   * 注册器本质上就是一个Map，和 Spring 里面的 beanDefinitionMap 概念上是类似的
+   */
   private final Map<String, Class<?>> typeAliases = new HashMap<>();
 
   public TypeAliasRegistry() {
+    /**
+     * 此处的别名都是我们在XML里面可以配置的一些基础数据类型，如下案例：
+     *
+     *   <delete id="deleteOne" parameterType="int">
+     *     delete from member where id = #{id}
+     *   </delete>
+     *
+     *   parameterType 的 int 便是指向 registerAlias("int", Integer.class);
+     *   表示参数的类型是一个 Integer 类型
+     *
+     */
     registerAlias("string", String.class);
 
     registerAlias("byte", Byte.class);
@@ -112,15 +127,20 @@ public class TypeAliasRegistry {
   // throws class cast exception as well if types cannot be assigned
   public <T> Class<T> resolveAlias(String string) {
     try {
+      // 非空校验
       if (string == null) {
         return null;
       }
       // issue #748
+      // 转小写，需要大小写兼容
       String key = string.toLowerCase(Locale.ENGLISH);
       Class<T> value;
+      // 判断别名注册器中是否存在这个 key
       if (typeAliases.containsKey(key)) {
+        // 存在则直接获取
         value = (Class<T>) typeAliases.get(key);
       } else {
+        // 不存在则试试能不能反射到
         value = (Class<T>) Resources.classForName(string);
       }
       return value;

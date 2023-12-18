@@ -93,6 +93,7 @@ public class UnpooledDataSource implements DataSource {
 
   @Override
   public Connection getConnection() throws SQLException {
+    // 通过账号密码获取数据库连接
     return doGetConnection(username, password);
   }
 
@@ -220,12 +221,15 @@ public class UnpooledDataSource implements DataSource {
     if (password != null) {
       props.setProperty("password", password);
     }
+    // 获取数据库连接
     return doGetConnection(props);
   }
 
   private Connection doGetConnection(Properties properties) throws SQLException {
     initializeDriver();
+    // 通过 DriverManager 建立连接，类似 JDBC 的写法
     Connection connection = DriverManager.getConnection(url, properties);
+    // 配置数据库连接中的一些参数
     configureConnection(connection);
     return connection;
   }
@@ -251,12 +255,15 @@ public class UnpooledDataSource implements DataSource {
   }
 
   private void configureConnection(Connection conn) throws SQLException {
+    // 如果设置了网络超时时间，则创建一个单线程的线程池来执行超时操作
     if (defaultNetworkTimeout != null) {
       conn.setNetworkTimeout(Executors.newSingleThreadExecutor(), defaultNetworkTimeout);
     }
+    // 如果设置了自动提交参数，并且此参数和当前数据库连接的自动提交状态不一致，那么就要覆盖当前连接的配置
     if (autoCommit != null && autoCommit != conn.getAutoCommit()) {
       conn.setAutoCommit(autoCommit);
     }
+    // 设置数据库的事务隔离级别
     if (defaultTransactionIsolationLevel != null) {
       conn.setTransactionIsolation(defaultTransactionIsolationLevel);
     }

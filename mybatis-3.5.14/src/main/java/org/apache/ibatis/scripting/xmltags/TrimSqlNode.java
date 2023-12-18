@@ -54,8 +54,11 @@ public class TrimSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
+    // 创建一个已过滤的 DynamicContext 对象
     FilteredDynamicContext filteredDynamicContext = new FilteredDynamicContext(context);
+    // 将必要的动态标签筛选出来，比如说只传 id 参数，那么只能追加 id != null 的表达式上去
     boolean result = contents.apply(filteredDynamicContext);
+    // 将 SQL 本身和条件进行拼接
     filteredDynamicContext.applyAll();
     return result;
   }
@@ -87,12 +90,16 @@ public class TrimSqlNode implements SqlNode {
     }
 
     public void applyAll() {
+      // 获取到筛选出来的表达式并去除首尾空白字符，如此处为: id = #{id}
       sqlBuffer = new StringBuilder(sqlBuffer.toString().trim());
+      // 将SQL条件转为大写
       String trimmedUppercaseSql = sqlBuffer.toString().toUpperCase(Locale.ENGLISH);
       if (trimmedUppercaseSql.length() > 0) {
+        // 根据 SQL 的规则添加特定的前缀和后缀，比如说 id = #{id} 的表达式前就需要加上 where 前缀
         applyPrefix(sqlBuffer, trimmedUppercaseSql);
         applySuffix(sqlBuffer, trimmedUppercaseSql);
       }
+      // 将 SQL 的条件部分添加到 SQL 中，组成完整 SQL
       delegate.appendSql(sqlBuffer.toString());
     }
 

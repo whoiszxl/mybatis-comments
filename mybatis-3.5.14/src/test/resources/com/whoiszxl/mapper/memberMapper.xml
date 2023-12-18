@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.whoiszxl.MemberMapper">
+
+  <cache
+    size="512"
+    readOnly="true"
+    eviction="FIFO"
+    flushInterval="100000"/>
+
+  <resultMap id="resultMap1" type="com.whoiszxl.entity.Member">
+    <result column="id" property="id1"></result>
+  </resultMap>
+
+
+  <select id="findByCondition" resultMap="resultMap1" parameterType="com.whoiszxl.entity.Member" useCache="true">
+    select * from member
+    <where>
+      <if test="id != null">id = #{id}</if>
+      <if test="username != null">AND username like #{username}</if>
+      <if test="password != null">AND password like #{password}</if>
+    </where>
+  </select>
+
+  <select id="findById" resultType="com.whoiszxl.entity.Member">select * from member where id = #{id}</select>
+
+  <select id="findAll" resultType="com.whoiszxl.entity.Member">
+    select * from member
+  </select>
+
+  <insert id="insertOne" parameterType="com.whoiszxl.entity.Member">
+    insert into member values(#{id}, #{username}, #{password});
+  </insert>
+
+  <delete id="deleteOne" parameterType="int">
+    delete from member where id = #{id}
+  </delete>
+
+  <update id="updateOne" parameterType="com.whoiszxl.entity.Member">
+    update member set username = #{username}, password = #{password} where id = #{id}
+  </update>
+
+</mapper>

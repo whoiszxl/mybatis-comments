@@ -27,6 +27,7 @@ public class ExceptionFactory {
   }
 
   public static RuntimeException wrapException(String message, Exception e) {
+    // 抛出异常，会通过 ErrorContext 对象来构建一个便于解读的日志信息
     return new PersistenceException(ErrorContext.instance().message(message).cause(e).toString(), e);
   }
 

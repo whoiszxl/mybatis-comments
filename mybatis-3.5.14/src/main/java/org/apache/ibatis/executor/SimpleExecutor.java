@@ -58,12 +58,18 @@ public class SimpleExecutor extends BaseExecutor {
       BoundSql boundSql) throws SQLException {
     Statement stmt = null;
     try {
+      // 从 MappedStatement 中获取到 Configuration 实例信息
       Configuration configuration = ms.getConfiguration();
+      // 接着通过 configuration 将语句的执行器创建出来，其中的语句处理器有如下三种：普通语句处理、存储过程处理、预编译语句处理
+      // 此处默认创建的的预编译语句处理的执行器
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler,
           boundSql);
+      // 通过执行器准备执行语句
       stmt = prepareStatement(handler, ms.getStatementLog());
+      // 通过执行器执行语句
       return handler.query(stmt, resultHandler);
     } finally {
+      // 关闭
       closeStatement(stmt);
     }
   }
@@ -86,8 +92,11 @@ public class SimpleExecutor extends BaseExecutor {
 
   private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
     Statement stmt;
+    // 获取到数据库的JDBC连接
     Connection connection = getConnection(statementLog);
+    // 获取到 Statement 对象，并通过插件对 StatementHandler 对象做增强
     stmt = handler.prepare(connection, transaction.getTimeout());
+    // 对语句进行参数化
     handler.parameterize(stmt);
     return stmt;
   }

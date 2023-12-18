@@ -153,6 +153,8 @@ public class ParamNameResolver {
    *
    * @return a {@link ParamMap}
    *
+   * 如果该对象是集合（Collection）或数组（Array），则将其包装为一个ParamMap对象。
+   *
    * @since 3.5.5
    */
   public static Object wrapToMapIfCollection(Object object, String actualParamName) {

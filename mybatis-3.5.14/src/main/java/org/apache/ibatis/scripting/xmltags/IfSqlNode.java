@@ -31,6 +31,7 @@ public class IfSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
+    // <if test="id != null">id = #{id}</if> 标签中 test 条件判断，如果符合条件则返回 true
     if (evaluator.evaluateBoolean(test, context.getBindings())) {
       contents.apply(context);
       return true;

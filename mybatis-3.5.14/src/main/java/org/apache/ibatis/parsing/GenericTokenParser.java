@@ -31,11 +31,14 @@ public class GenericTokenParser {
   }
 
   public String parse(String text) {
+    // 如果SQL不存在，直接返回空字符串
     if (text == null || text.isEmpty()) {
       return "";
     }
     // search open token
+    // 搜索文本中是否存在 `${` 符号
     int start = text.indexOf(openToken);
+    // 如果不存在，直接返回
     if (start == -1) {
       return text;
     }

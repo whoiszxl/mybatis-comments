@@ -29,6 +29,8 @@ import org.apache.ibatis.builder.BuilderException;
 public class ExpressionEvaluator {
 
   public boolean evaluateBoolean(String expression, Object parameterObject) {
+    // 通过 OgnlCache 工具类，来根据给定的表达式和参数对象获取表达式的值
+    // 如表达式 expression 为：id != null, 那此处则会去判断 parameterObject 中是否存在 id
     Object value = OgnlCache.getValue(expression, parameterObject);
     if (value instanceof Boolean) {
       return (Boolean) value;

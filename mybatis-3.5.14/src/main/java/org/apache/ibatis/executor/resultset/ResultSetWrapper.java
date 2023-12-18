@@ -51,10 +51,13 @@ public class ResultSetWrapper {
   private final Map<String, List<String>> unMappedColumnNamesMap = new HashMap<>();
 
   public ResultSetWrapper(ResultSet rs, Configuration configuration) throws SQLException {
+    // 类型处理器注册中心拿到
     this.typeHandlerRegistry = configuration.getTypeHandlerRegistry();
+    // 赋值结果集
     this.resultSet = rs;
     final ResultSetMetaData metaData = rs.getMetaData();
     final int columnCount = metaData.getColumnCount();
+    // 遍历拿到结果集的每个列名，JDBC的类型以及列的 Class 名
     for (int i = 1; i <= columnCount; i++) {
       columnNames.add(configuration.isUseColumnLabel() ? metaData.getColumnLabel(i) : metaData.getColumnName(i));
       jdbcTypes.add(JdbcType.forCode(metaData.getColumnType(i)));

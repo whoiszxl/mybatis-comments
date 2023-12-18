@@ -48,8 +48,10 @@ public class DefaultObjectFactory implements ObjectFactory, Serializable {
   @SuppressWarnings("unchecked")
   @Override
   public <T> T create(Class<T> type, List<Class<?>> constructorArgTypes, List<Object> constructorArgs) {
+    // 解析到 type 的 class 对象
     Class<?> classToCreate = resolveInterface(type);
     // we know types are assignable
+    // 传入 class 对象和他的构造方法的参数和类型
     return (T) instantiateClass(classToCreate, constructorArgTypes, constructorArgs);
   }
 
@@ -70,6 +72,7 @@ public class DefaultObjectFactory implements ObjectFactory, Serializable {
       }
       constructor = type.getDeclaredConstructor(constructorArgTypes.toArray(new Class[0]));
       try {
+        // 通过反射的方式将对应的实例创建出来
         return constructor.newInstance(constructorArgs.toArray(new Object[0]));
       } catch (IllegalAccessException e) {
         if (Reflector.canControlMemberAccessible()) {

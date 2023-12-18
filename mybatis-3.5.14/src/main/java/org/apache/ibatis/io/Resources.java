@@ -27,6 +27,7 @@ import java.util.Properties;
 
 /**
  * A class to simplify access to resources through the classloader.
+ * 简化对资源访问的一个工具类，通过类加载器实现
  *
  * @author Clinton Begin
  */
@@ -127,6 +128,7 @@ public class Resources {
    *           If the resource cannot be found or read
    */
   public static InputStream getResourceAsStream(ClassLoader loader, String resource) throws IOException {
+    // 通过类加载器加载到对应的XML资源的输入流
     InputStream in = classLoaderWrapper.getResourceAsStream(resource, loader);
     if (in == null) {
       throw new IOException("Could not find resource " + resource);

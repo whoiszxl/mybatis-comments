@@ -31,13 +31,25 @@ import org.apache.ibatis.session.Configuration;
  * Can also have additional parameters that are created by the dynamic language (for loops, bind...).
  *
  * @author Clinton Begin
+ *
+ * 从 {@link SqlSource} 获取的实际的 SQL 字符串经过处理后的 SQL 语句
+ * SQL 中存在 ? 号的占位符，也就是最终发送给 JDBC 的 SQL 语句，以及它的参数信息
  */
 public class BoundSql {
 
+  /** SQL 文本 */
   private final String sql;
+
+  /** 静态参数说明 */
   private final List<ParameterMapping> parameterMappings;
+
+  /** 运行时的参数对象 */
   private final Object parameterObject;
+
+  /** 额外参数，也就是for loops、bind生成的 */
   private final Map<String, Object> additionalParameters;
+
+  /** 额外参数的facade模式包装 */
   private final MetaObject metaParameters;
 
   public BoundSql(Configuration configuration, String sql, List<ParameterMapping> parameterMappings,

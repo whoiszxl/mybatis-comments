@@ -41,7 +41,12 @@ public class XMLLanguageDriver implements LanguageDriver {
 
   @Override
   public SqlSource createSqlSource(Configuration configuration, XNode script, Class<?> parameterType) {
+    // 创建一个 XML 的 SQL 脚本的构建器，此处的 script 如下
+    // <select parameterType="int" id="findById" resultType="com.whoiszxl.entity.Member">
+    //    select * from member where id = #{id}
+    //  </select>
     XMLScriptBuilder builder = new XMLScriptBuilder(configuration, script, parameterType);
+    // 通过构建器解析 script 脚本
     return builder.parseScriptNode();
   }
 

@@ -37,12 +37,20 @@ public class RawSqlSource implements SqlSource {
   private final SqlSource sqlSource;
 
   public RawSqlSource(Configuration configuration, SqlNode rootSqlNode, Class<?> parameterType) {
+    // getSql 获取到对应的 SQL 语句
     this(configuration, getSql(configuration, rootSqlNode), parameterType);
   }
 
   public RawSqlSource(Configuration configuration, String sql, Class<?> parameterType) {
+    // 创建SQL Source 构建器
     SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
+
+    // 如果请求参数类型不存在，则默认为 Object.class
     Class<?> clazz = parameterType == null ? Object.class : parameterType;
+
+    // 此处进行解析，实际操作就是将 #{id} 替换为 ?
+    // 如：    select * from member where id = #{id}
+    // 替换后： select * from member where id = ?
     sqlSource = sqlSourceParser.parse(sql, clazz, new HashMap<>());
   }
 

@@ -28,6 +28,7 @@ import org.apache.ibatis.executor.BatchResult;
  * manage transactions.
  *
  * @author Clinton Begin
+ * SQL会话接口，定义增删改查、事务提交回滚等操作
  */
 public interface SqlSession extends Closeable {
 

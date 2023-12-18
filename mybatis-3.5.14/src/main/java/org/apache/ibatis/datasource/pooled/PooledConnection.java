@@ -50,12 +50,14 @@ class PooledConnection implements InvocationHandler {
    *          - the dataSource that the connection is from
    */
   public PooledConnection(Connection connection, PooledDataSource dataSource) {
+    // 基础的赋值操作
     this.hashCode = connection.hashCode();
     this.realConnection = connection;
     this.dataSource = dataSource;
     this.createdTimestamp = System.currentTimeMillis();
     this.lastUsedTimestamp = System.currentTimeMillis();
     this.valid = true;
+    // 此处需要通过 JDK 动态代理创建一个代理对象，以做增强操作
     this.proxyConnection = (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), IFACES, this);
   }
 
@@ -244,17 +246,21 @@ class PooledConnection implements InvocationHandler {
    */
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    // 这里会调用到代理对象的增强逻辑里面
     String methodName = method.getName();
+    // 判断调用的方法是不是 close 方法，如果是，则需要将连接重新放回连接池中，而不是直接关闭连接，用以支持后续复用
     if (CLOSE.equals(methodName)) {
       dataSource.pushConnection(this);
       return null;
     }
     try {
+      // 如果是调用的普通方法，则需要检查一下连接的状态，保证连接可用
       if (!Object.class.equals(method.getDeclaringClass())) {
         // issue #579 toString() should never fail
         // throw an SQLException instead of a Runtime
         checkConnection();
       }
+      // 然后通过 invoke 方法调用 real 真实连接里的对应的方法，并传入对应的参数
       return method.invoke(realConnection, args);
     } catch (Throwable t) {
       throw ExceptionUtil.unwrapThrowable(t);

@@ -94,41 +94,79 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private XMLConfigBuilder(Class<? extends Configuration> configClass, XPathParser parser, String environment,
       Properties props) {
+    // 反射创建配置实例，并拿到别名注册器和类型处理注册器
     super(newConfig(configClass));
+    // 错误上下文 resource 信息填充
     ErrorContext.instance().resource("SQL Mapper Configuration");
+    // 设置变量信息，默认为 null
     this.configuration.setVariables(props);
+    // 是否开始解析，默认为 false
     this.parsed = false;
+    // 赋值环境信息，为字符串，值为 `<environment id="prod">` 中的id值，可以动态切换数据库环境
     this.environment = environment;
+    // 指定解析器，默认为 XPath 的解析器
     this.parser = parser;
   }
 
   public Configuration parse() {
+    // 判断是否已经开始解析了，防止重复解析
     if (parsed) {
       throw new BuilderException("Each XMLConfigBuilder can only be used once.");
     }
+    // 当解析开始时，需要将解析状态赋值为 true，表示已经开始解析了
     parsed = true;
+
+    /**
+     * 开始解析
+     * parser.evalNode("/configuration"): 通过 XPath 解析器进行解析，拿到 <configuration></configuration> 标签里面所有的节点
+     * 参考案例: {@link com.whoiszxl.utils.XPathParserTest#xPathTest()}
+     *
+     * parseConfiguration(): 将解析出来的 XPath 节点中的内容赋值到 Configuration 实例里面
+     */
     parseConfiguration(parser.evalNode("/configuration"));
     return configuration;
   }
 
+  /**
+   * 解析标签，标签参考：{@link mybatis-3.5.14/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-config.dtd}
+   *
+   * <!ELEMENT configuration (properties?, settings?, typeAliases?, typeHandlers?,
+   * objectFactory?, objectWrapperFactory?, reflectorFactory?, plugins?, environments?,
+   * databaseIdProvider?, mappers?)>
+   *
+   * @param root
+   */
   private void parseConfiguration(XNode root) {
     try {
       // issue #117 read properties first
+      // 解析 properties 标签
       propertiesElement(root.evalNode("properties"));
+      // 解析 settings 标签
       Properties settings = settingsAsProperties(root.evalNode("settings"));
       loadCustomVfsImpl(settings);
       loadCustomLogImpl(settings);
+
+      // 解析 typeAliases 标签
       typeAliasesElement(root.evalNode("typeAliases"));
+      // 解析 plugins 标签
       pluginsElement(root.evalNode("plugins"));
+      // 解析 objectFactory 标签
       objectFactoryElement(root.evalNode("objectFactory"));
+      // 解析 objectWrapperFactory 标签
       objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
+      // 解析 reflectorFactory 标签
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
       settingsElement(settings);
       // read it after objectFactory and objectWrapperFactory issue #631
+      // 解析 environments 标签
       environmentsElement(root.evalNode("environments"));
+      // 解析 databaseIdProvider 标签
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+      // 解析 typeHandlers 标签
       typeHandlersElement(root.evalNode("typeHandlers"));
+      // 解析 mappers 标签
       mappersElement(root.evalNode("mappers"));
+
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
     }
@@ -195,14 +233,29 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
   }
 
+
+  /**
+   * <plugins> 标签解析
+   * 案例参考：
+   *   <plugins>
+   *     <plugin interceptor="com.whoiszxl.plugins.LoggerPlugin"></plugin>
+   *     <plugin interceptor="com.whoiszxl.plugins.PasswordDesensitizePlugin"></plugin>
+   *   </plugins>
+   */
   private void pluginsElement(XNode context) throws Exception {
+    // 判断 <plugins> 节点是否存在，存在则处理
     if (context != null) {
+      // 遍历 <plugins> 节点下的 <plugin> 节点
       for (XNode child : context.getChildren()) {
+        // 获取 <plugin> 标签里的 interceptor 属性，例如：com.whoiszxl.plugins.LoggerPlugin
         String interceptor = child.getStringAttribute("interceptor");
+        // 获取 <plugin> 标签的 <property> 子标签
         Properties properties = child.getChildrenAsProperties();
-        Interceptor interceptorInstance = (Interceptor) resolveClass(interceptor).getDeclaredConstructor()
-            .newInstance();
+        // 获取到 com.whoiszxl.plugins.LoggerPlugin 这个字符串对应的 Class 对象，并通过其定义的构造器进行构造初始化
+        Interceptor interceptorInstance = (Interceptor) resolveClass(interceptor).getDeclaredConstructor().newInstance();
+        // 将子标签 <property> 配置的属性设置到这个拦截器插件中
         interceptorInstance.setProperties(properties);
+        // 将创建出来的拦截器实例添加到 Configuration 对象里的 interceptorChain 成员变量的 interceptors List 列表中
         configuration.addInterceptor(interceptorInstance);
       }
     }
@@ -296,20 +349,30 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private void environmentsElement(XNode context) throws Exception {
+    // 如果节点信息不存在，直接返回
     if (context == null) {
       return;
     }
+    // 如果没有指定是哪个环境，那么获取到默认的环境 <environments default="dev">
     if (environment == null) {
       environment = context.getStringAttribute("default");
     }
+
+    // 遍历 <environments> 标签下的子节点
     for (XNode child : context.getChildren()) {
+      // 获取到子节点的环境id
       String id = child.getStringAttribute("id");
+      // 判断子节点的id是否和我们指定的环境信息id一致
       if (isSpecifiedEnvironment(id)) {
+        // 获取到 transactionManager 标签配置的 JDBC 事务工厂
         TransactionFactory txFactory = transactionManagerElement(child.evalNode("transactionManager"));
+        // 获取到 dataSource 标签下的数据库连接等配置信息
         DataSourceFactory dsFactory = dataSourceElement(child.evalNode("dataSource"));
         DataSource dataSource = dsFactory.getDataSource();
+        // 构建一个 Environment 环境对象出来，其中存有事务工厂和数据源工厂
         Environment.Builder environmentBuilder = new Environment.Builder(id).transactionFactory(txFactory)
             .dataSource(dataSource);
+        // 再将环境信息保存到 Configuration 对象里面
         configuration.setEnvironment(environmentBuilder.build());
         break;
       }
@@ -337,10 +400,17 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private TransactionFactory transactionManagerElement(XNode context) throws Exception {
+    // context内容：<transactionManager type="JDBC"/>
     if (context != null) {
+      // 从节点中拿到 type 也就是 JDBC
       String type = context.getStringAttribute("type");
+      // 看看当前节点下还有没有其他属性，如果有，则将这些属性设置到 Properties 对象中，方便后续设置到事务工厂里
       Properties props = context.getChildrenAsProperties();
+      // 此处通过 type 也就是 JDBC 去别名注册器里面找到对应的JDBC事务工厂，此操作在 Configuration 的构造函数中赋值
+      // typeAliasRegistry.registerAlias("JDBC", JdbcTransactionFactory.class);
+      // 拿到 JdbcTransactionFactory.class 后，获取到它的构造函数进行实例化
       TransactionFactory factory = (TransactionFactory) resolveClass(type).getDeclaredConstructor().newInstance();
+      // 如果存在属性则赋值到工厂中
       factory.setProperties(props);
       return factory;
     }
@@ -348,10 +418,24 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private DataSourceFactory dataSourceElement(XNode context) throws Exception {
+    /**
+     * 此处 context 的内容如下：
+     * <dataSource type="POOLED">
+     *     <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+     *     <property name="url" value="jdbc:mysql://106.13.7.251:3300/mybatis-prod?characterEncoding=utf-8"/>
+     *     <property name="username" value="root"/>
+     *     <property name="password" value="123456"/>
+     * </dataSource>
+     */
     if (context != null) {
+      // 获取到 <dataSource type="POOLED"> 标签内的 type 值 POOLED
       String type = context.getStringAttribute("type");
+      // 获取到 <dataSource> 标签下的数据库连接属性
       Properties props = context.getChildrenAsProperties();
+      // 通过 resolveClass(type) 从别名注册器中获取到 POOLED 对应的 class 对象：PooledDataSourceFactory
+      // 然后再拿到其对应的构造函数进行实例化，获取到数据库源的工厂对象
       DataSourceFactory factory = (DataSourceFactory) resolveClass(type).getDeclaredConstructor().newInstance();
+      // 将数据库连接属性信息都保存到工厂对象里面
       factory.setProperties(props);
       return factory;
     }
@@ -387,32 +471,55 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private void mappersElement(XNode context) throws Exception {
+    /**
+     * context 内容如下:
+     * <mappers>
+     *     <mapper resource="com/whoiszxl/mapper/memberMapper.xml"/>
+     * </mappers>
+     */
     if (context == null) {
       return;
     }
+
+    // 遍历 <mappers> 标签下的子节点
     for (XNode child : context.getChildren()) {
+      // 如果是 <package> 标签
       if ("package".equals(child.getName())) {
+        // 则从中拿到 <package name="com.whoiszxl"> 中的 name 值
         String mapperPackage = child.getStringAttribute("name");
+        // 并将这个包下的所有Mapper接口添加到 Configuration 对象中
         configuration.addMappers(mapperPackage);
       } else {
+        // 如果不是 <package> 标签，是 <mapper> 标签，则获取其中的 resource 属性
+        // 属性值参考: com/whoiszxl/mapper/memberMapper.xml
         String resource = child.getStringAttribute("resource");
+        // 获取 url 属性
         String url = child.getStringAttribute("url");
+        // 获取 class 属性
         String mapperClass = child.getStringAttribute("class");
+
+        // 如果 resource 存在，其他的不存在
         if (resource != null && url == null && mapperClass == null) {
+          // 记录错误上下文的资源
           ErrorContext.instance().resource(resource);
+          // 通过 Resources 工具从这个路径里拿到对应文件的输入流，此处也就是 memberMapper.xml 的输入流
           try (InputStream inputStream = Resources.getResourceAsStream(resource)) {
+            // 通过 XPath 进行解析
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource,
                 configuration.getSqlFragments());
             mapperParser.parse();
           }
         } else if (resource == null && url != null && mapperClass == null) {
+          // 如果 url 存在，其他的不存在
           ErrorContext.instance().resource(url);
+          // 通过 url 获取到输入流后，再通过 XPath 进行解析
           try (InputStream inputStream = Resources.getUrlAsStream(url)) {
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, url,
                 configuration.getSqlFragments());
             mapperParser.parse();
           }
         } else if (resource == null && url == null && mapperClass != null) {
+          // 如果 mapperClass 存在，其他的不存在，直接将 class 对象添加到 Configuration 实例中
           Class<?> mapperInterface = Resources.classForName(mapperClass);
           configuration.addMapper(mapperInterface);
         } else {
@@ -424,17 +531,21 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private boolean isSpecifiedEnvironment(String id) {
+    // 如果没有指定环境id，则直接抛出异常
     if (environment == null) {
       throw new BuilderException("No environment specified.");
     }
+    // 如果 <environment> 标签没有指定 id，也直接抛出异常
     if (id == null) {
       throw new BuilderException("Environment requires an id attribute.");
     }
+    // 通过 equals 判断两个ID是否相等
     return environment.equals(id);
   }
 
   private static Configuration newConfig(Class<? extends Configuration> configClass) {
     try {
+      // 通过反射的方式将 Configuration 实例化出来
       return configClass.getDeclaredConstructor().newInstance();
     } catch (Exception ex) {
       throw new BuilderException("Failed to create a new Configuration instance.", ex);

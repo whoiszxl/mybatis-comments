@@ -41,6 +41,7 @@ public class TransactionalCacheManager {
   }
 
   public void commit() {
+    // 遍历 transactionalCaches 里面所有的事务缓存，将这一批事务缓存全部提交
     for (TransactionalCache txCache : transactionalCaches.values()) {
       txCache.commit();
     }

@@ -39,9 +39,13 @@ public class JdbcTransaction implements Transaction {
 
   private static final Log log = LogFactory.getLog(JdbcTransaction.class);
 
+  /** JDBC的数据库连接 */
   protected Connection connection;
+  /** JDBC的数据源信息 */
   protected DataSource dataSource;
+  /** 事务隔离级别 */
   protected TransactionIsolationLevel level;
+  /** 是否自动提交 */
   protected boolean autoCommit;
   protected boolean skipSetAutoCommitOnClose;
 
@@ -63,6 +67,7 @@ public class JdbcTransaction implements Transaction {
 
   @Override
   public Connection getConnection() throws SQLException {
+    // 如果数据库连接没有打开，就打开一下
     if (connection == null) {
       openConnection();
     }
@@ -75,6 +80,7 @@ public class JdbcTransaction implements Transaction {
       if (log.isDebugEnabled()) {
         log.debug("Committing JDBC Connection [" + connection + "]");
       }
+      // 借用 JDBC 来做事务的提交
       connection.commit();
     }
   }
@@ -85,6 +91,7 @@ public class JdbcTransaction implements Transaction {
       if (log.isDebugEnabled()) {
         log.debug("Rolling back JDBC Connection [" + connection + "]");
       }
+      // 借用 JDBC 来做事务的回滚
       connection.rollback();
     }
   }
@@ -142,10 +149,13 @@ public class JdbcTransaction implements Transaction {
     if (log.isDebugEnabled()) {
       log.debug("Opening JDBC Connection");
     }
+    // 从 dataSource 数据源里获取到数据库连接
     connection = dataSource.getConnection();
+    // 如果事务隔离级别存在，那么设置一下
     if (level != null) {
       connection.setTransactionIsolation(level.getLevel());
     }
+    // 设置自动提交的配置
     setDesiredAutoCommit(autoCommit);
   }
 

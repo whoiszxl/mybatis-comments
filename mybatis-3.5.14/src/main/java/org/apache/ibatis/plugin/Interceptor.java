@@ -22,12 +22,21 @@ import java.util.Properties;
  */
 public interface Interceptor {
 
+  /**
+   * 方法前后进行拦截处理的核心逻辑
+   */
   Object intercept(Invocation invocation) throws Throwable;
 
+  /**
+   * 包装目标对象，创建代理对象的方法
+   */
   default Object plugin(Object target) {
     return Plugin.wrap(target, this);
   }
 
+  /**
+   * 设置拦截器属性的方法
+   */
   default void setProperties(Properties properties) {
     // NOP
   }

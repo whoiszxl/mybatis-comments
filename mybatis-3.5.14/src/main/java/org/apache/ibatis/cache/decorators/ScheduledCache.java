@@ -57,6 +57,7 @@ public class ScheduledCache implements Cache {
 
   @Override
   public Object getObject(Object key) {
+    // 此处判断是否需要过期的数据，如果清除了，直接返回 null，没有清除则从 delegate 里面再去获取缓存数据
     return clearWhenStale() ? null : delegate.getObject(key);
   }
 
@@ -83,7 +84,9 @@ public class ScheduledCache implements Cache {
   }
 
   private boolean clearWhenStale() {
+    // 判断当前时间-最后一次清理时间是否大于我们配置的 [flushInterval="100000"] 这个间隔
     if (System.currentTimeMillis() - lastClear > clearInterval) {
+      // 如果大于间隔，说明需要刷新缓存，就调用 clear 清除缓存
       clear();
       return true;
     }

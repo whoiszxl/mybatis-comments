@@ -41,13 +41,16 @@ public class SqlSourceBuilder extends BaseBuilder {
   }
 
   public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
+    // 创建一个 token 处理器和一个 token 的解析器，需要通过 #{} 符号进行解析
     ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType,
         additionalParameters);
     GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
     String sql;
     if (configuration.isShrinkWhitespacesInSql()) {
+      // 根据配置判断在解析 SQL 之前是否需要去除额外的空白符号
       sql = parser.parse(removeExtraWhitespaces(originalSql));
     } else {
+      // 不去除额外空白符号的解析流程
       sql = parser.parse(originalSql);
     }
     return new StaticSqlSource(configuration, sql, handler.getParameterMappings());
